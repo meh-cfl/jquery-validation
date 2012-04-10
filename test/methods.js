@@ -131,6 +131,7 @@ test("number", function() {
 	ok( method( "123.000" ), "Valid decimal" );
 	ok( method( "123,000.00" ), "Valid decimal" );
 	ok( method( "-123,000.00" ), "Valid decimal" );
+	ok( method( ".100" ), "Valid decimal" );
 	ok(!method( "1230,000.00" ), "Invalid decimal" );
 	ok(!method( "123.0.0,0" ), "Invalid decimal" );
 	ok(!method( "x123" ), "Invalid decimal" );
@@ -230,7 +231,7 @@ test("required", function() {
 test("required with dependencies", function() {
 	var v = jQuery("#form").validate(),
 		method = $.validator.methods.required,
-    	e = $('#hidden2, #select1, #area2, #radio1, #check2');
+		e = $('#hidden2, #select1, #area2, #radio1, #check2');
 	ok( method.call( v, e[0].value, e[0], "asffsaa"), "Valid text input due to depencie not met" );
 	ok(!method.call( v, e[0].value, e[0], "input"), "Invalid text input" );
 	ok( method.call( v, e[0].value, e[0], function() { return false; }), "Valid text input due to depencie not met" );
@@ -354,8 +355,8 @@ test("accept", function() {
 
 	var v = jQuery("#form").validate(),
 		method = function(value, param) {
-		return $.validator.methods.accept.call(v, value, $('#text1')[0], param)
-	};
+			return $.validator.methods.accept.call(v, value, $('#text1')[0], param);
+		};
 	ok( method( "picture.doc", "doc"), "Valid custom accept type" );
 	ok( method( "picture.pdf", "doc|pdf"), "Valid custom accept type" );
 	ok( method( "picture.pdf", "pdf|doc"), "Valid custom accept type" );
@@ -390,21 +391,21 @@ test("remote", function() {
 	});
 	$(document).ajaxStop(function() {
 		$(document).unbind("ajaxStop");
-		equals( 1, v.size(), "There must be one error" );
-		equals( "Peter in use", v.errorList[0].message );
+		equal( 1, v.size(), "There must be one error" );
+		equal( "Peter in use", v.errorList[0].message );
 
 		$(document).ajaxStop(function() {
 			$(document).unbind("ajaxStop");
-			equals( 1, v.size(), "There must be one error" );
-			equals( "Peter2 in use", v.errorList[0].message );
+			equal( 1, v.size(), "There must be one error" );
+			equal( "Peter2 in use", v.errorList[0].message );
 			start();
 		});
 		e.val("Peter2");
-		ok( !v.element(e), "new value, new request" );
+		strictEqual( v.element(e), true, "new value, new request; dependency-mismatch considered as valid though" );
 	});
-	ok( !v.element(e), "invalid element, nothing entered yet" );
+	strictEqual( v.element(e), false, "invalid element, nothing entered yet" );
 	e.val("Peter");
-	ok( !v.element(e), "still invalid, because remote validation must block until it returns" );
+	strictEqual( v.element(e), true, "still invalid, because remote validation must block until it returns; dependency-mismatch considered as valid though" );
 });
 
 test("remote, customized ajax options", function() {
@@ -418,8 +419,8 @@ test("remote, customized ajax options", function() {
 					url: "users.php",
 					type: "POST",
 					beforeSend: function(request, settings) {
-						same(settings.type, "POST");
-						same(settings.data, "username=asdf&email=email.com");
+						deepEqual(settings.type, "POST");
+						deepEqual(settings.data, "username=asdf&email=email.com");
 					},
 					data: {
 						email: function() {
@@ -460,15 +461,15 @@ test("remote extensions", function() {
 	});
 	$(document).ajaxStop(function() {
 		$(document).unbind("ajaxStop");
-		equals( 1, v.size(), "There must be one error" );
-		equals( v.errorList[0].message, "asdf is already taken, please try something else" );
+		equal( 1, v.size(), "There must be one error" );
+		equal( v.errorList[0].message, "asdf is already taken, please try something else" );
 		v.element(e);
-		equals( v.errorList[0].message, "asdf is already taken, please try something else", "message doesn't change on revalidation" );
+		equal( v.errorList[0].message, "asdf is already taken, please try something else", "message doesn't change on revalidation" );
 		start();
 	});
-	ok( !v.element(e), "invalid element, nothing entered yet" );
+	strictEqual( v.element(e), false, "invalid element, nothing entered yet" );
 	e.val("asdf");
-	ok( !v.element(e), "still invalid, because remote validation must block until it returns" );
+	strictEqual( v.element(e), true, "still invalid, because remote validation must block until it returns; dependency-mismatch considered as valid though" );
 });
 
 module("additional methods");
@@ -527,12 +528,15 @@ test("maxWords", function() {
 	ok( method("hello", 2), "plain text, valid" );
 	ok( method("<b>world</b>", 2), "html, valid" );
 	ok( method("world <br/>", 2), "html, valid" );
-	ok( !method("hello worlds", 2), "plain text, invalid" );
-	ok( !method("<b>hello</b> world", 2), "html, invalid" );
+	ok( method("hello worlds", 2), "plain text, valid" );
+	ok( method("<b>hello</b> world", 2), "html, valid" );
+	ok( !method("hello my world", 2), "plain text, invalid" );
+	ok( !method("<b>hello</b> my world", 2), "html, invalid" );
 });
 
 test("pattern", function() {
 	var method = methodTest("pattern");
+	ok( method( "AR1004", "AR\\d{4}" ), "Correct format for the given RegExp" );
 	ok( method( "AR1004", /^AR\d{4}$/ ), "Correct format for the given RegExp" );
 	ok( !method( "BR1004", /^AR\d{4}$/ ), "Invalid format for the given RegExp" );
 });
@@ -540,7 +544,7 @@ test("pattern", function() {
 function testCardTypeByNumber(number, cardname, expected) {
 	$("#cardnumber").val(number);
 	var actual = $("#ccform").valid();
-	equals(actual, expected, $.format("Expect card number {0} to validate to {1}, actually validated to ", number, expected));
+	equal(actual, expected, $.format("Expect card number {0} to validate to {1}, actually validated to ", number, expected));
 }
 
 test('creditcardtypes, all', function() {
@@ -603,5 +607,42 @@ test('creditcardtypes, mastercard', function() {
 	testCardTypeByNumber("4111-1111-1111-1111", "VISA", false);
 });
 
-})(jQuery);
+function fillFormWithValuesAndExpect(formSelector, inputValues, expected) {
+	for (i=0; i < inputValues.length; i++) {
+		$(formSelector + ' input:eq(' + i + ')').val(inputValues[i]);
+	}
+	var actual = $(formSelector).valid();
+	equal(actual, expected, $.format("Filled inputs of form '{0}' with {1} values ({2})", formSelector, inputValues.length, inputValues.toString()));
 
+}
+
+test('require_from_group', function() {
+	$("#productInfo").validate({
+		rules: {
+			partnumber:  {require_from_group: [2,".productInfo"]},
+			description: {require_from_group: [2,".productInfo"]}
+		}
+	});
+
+	fillFormWithValuesAndExpect('#productInfo', [], false);
+	fillFormWithValuesAndExpect('#productInfo', [123], false);
+	fillFormWithValuesAndExpect('#productInfo', [123, 'widget'], true);
+	fillFormWithValuesAndExpect('#productInfo', [123, 'widget', 'red'], true);
+});
+
+test('skip_or_fill_minimum', function() {
+	$("#productInfo").validate({
+		rules: {
+			partnumber:  {skip_or_fill_minimum: [2,".productInfo"]},
+			description: {skip_or_fill_minimum: [2,".productInfo"]},
+			color:       {skip_or_fill_minimum: [2,".productInfo"]}
+		}
+	});
+
+	fillFormWithValuesAndExpect('#productInfo', [], true);
+	fillFormWithValuesAndExpect('#productInfo', [123], false);
+	fillFormWithValuesAndExpect('#productInfo', [123, 'widget'], true);
+	fillFormWithValuesAndExpect('#productInfo', [123, 'widget', 'red'], true);
+});
+
+})(jQuery);
